@@ -205,3 +205,8 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# API keys for the gmail
+.env
+credentials.json
+token.json
