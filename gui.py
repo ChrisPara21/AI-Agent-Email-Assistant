@@ -42,14 +42,15 @@ if st.button("Fetch & Analyze Emails", type="primary"):
                 st.write(f"**Snippet:** {email['Snippet']}")
 
         # 5. Send to AI for Analysis
-        with st.spinner("🧠 Llama 3.1 is analyzing your emails..."):
+        with st.spinner(" Llama 3.1 is analyzing your emails..."):
             system_prompt = """
             You are a highly efficient AI Email Assistant. 
             Your task is to read the provided unread emails and for each one:
-            1. Assign a category (Urgent, Work, Personal, Spam, Newsletter, bills).
-            2. Provide a very brief, 1-sentence summary of what the email is about.
+            1. Assign a category (Urgent, Work, Personal, Spam, Newsletter, bills), you can assign a mix of two categories if you think that it is best described this way.
+            2. Provide a very brief, 1-sentence summary of what the email is about so that the user can understand the context of the email without having to read the whole thing.
             
             Format your response clearly using Markdown (use bold text for categories and bullet points). Always reply in English.
+
             """
 
             response = client.chat.completions.create(
