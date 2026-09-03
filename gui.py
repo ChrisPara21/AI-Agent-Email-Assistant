@@ -19,7 +19,7 @@ if "email_content_for_ai" not in st.session_state:
 
 # 3. Build the User Interface
 st.title("📧 AI Email Assistant")
-st.subheader("Welcome! Fetch and analyze your unread emails using **Llama 3.1**.")
+st.subheader("Welcome! Fetch and analyze your unread emails using **GPT-OSS 20B**.")
 
 # Slider for number of emails
 num_emails = st.sidebar.slider("Number of emails to fetch", min_value=1, max_value=10, value=3)
@@ -54,7 +54,7 @@ if st.session_state.emails is not None:
         
         with col1:
             if st.button("📊 Summarize & Categorize"):
-                with st.spinner("Llama 3.1 is analyzing your emails..."):
+                with st.spinner("GPT-OSS 20B is analyzing your emails..."):
                     system_prompt1 = """
                     You are a highly efficient AI Email Assistant. 
                     Your task is to read the provided unread emails and for each one:
@@ -68,7 +68,7 @@ if st.session_state.emails is not None:
                             {"role": "system", "content": system_prompt1},
                             {"role": "user", "content": f"Here are my latest unread emails:\n{st.session_state.email_content_for_ai}"}
                         ],
-                        model="llama-3.1-8b-instant",
+                        model="openai/gpt-oss-20b",
                     )
                     st.subheader("AI Agent Summary")
                     st.markdown(response1.choices[0].message.content)
@@ -87,7 +87,7 @@ if st.session_state.emails is not None:
                             {"role": "system", "content": system_prompt2},
                             {"role": "user", "content": f"Here are my latest unread emails:\n{st.session_state.email_content_for_ai}"}
                         ],
-                        model="llama-3.1-8b-instant",
+                        model="openai/gpt-oss-20b",
                     )
                     st.subheader("AI Drafted Responses")
                     st.markdown(response2.choices[0].message.content)
