@@ -14,13 +14,13 @@ client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 print("Loading dataset...")
 dataset = load_dataset("jason23322/high-accuracy-email-classifier", split="test", token=os.environ.get("HF_TOKEN"))
 
-# 2. Stratified Sampling (Get 20 emails per category)
+# 2. Stratified Sampling (Get 30 emails per category)
 dataset_categories = ["forum", "promotions", "social_media", "spam", "updates", "verify_code"]
 sampled_emails = []
 
 for category in dataset_categories:
     # Filter the dataset by the current category and take the first 20
-    category_subset = dataset.filter(lambda example: example['category'] == category).select(range(30))
+    category_subset = dataset.filter(lambda example: example['category'] == category).shuffle().select(range(30))
     for email in category_subset:
         sampled_emails.append(email)
 
@@ -33,13 +33,26 @@ def classify_with_llm(subject, body):
     forum, promotions, social_media, spam, updates, verify_code.
 
     CRITICAL DEFINITIONS:
-    - "forum": Use for community boards, thread replies, and forum notifications like Github (even if they look like system updates).
-    - "updates": Use for account alerts, receipts, or shipping updates. Do NOT use for social or forum activity.
-    - "social_media": Use for mainstream social platforms (Twitter, Instagram, LinkedIn, etc), also for notifications of lives, events etc.
+    - "forum": This category classifies automated communications, discussion threads,
+     and administrative notifications originating from community-driven platforms and online message boards. (even if they look like system updates).
+
+    - "promotions": This category designates commercially driven correspondences, encompassing marketing campaigns,
+     sales advertisements, and promotional offers intended to stimulate consumer engagement.
+
+    - "social_media": This category isolates automated alerts and engagement notifications generated specifically
+     by social networking platforms regarding user-centric account activity.
+
+    - "spam": This category identifies highly unsolicited, deceptive, or malicious communications, specifically targeting phishing attempts,
+     fraudulent prize schemes, and unauthorized mass mailings.
+
+    - "updates": This category is strictly reserved for operational and technical communications, 
+     including automated system alerts, software security patches, and routine service maintenance notices.
+
+    - "verify_code": This category exclusively captures identity and access management emails that facilitate user authentication,
+     such as two-factor authorization PINs and system login codes.
     
     Respond with ONLY the exact category name. Do not add any other text, punctuation, or explanation.
-    For example if the category you clasified the email is "forum", DO NOT write "Category:forum" Or "Forum" with a capital letter
-    JUST WRITE THE CATEGORY "forum" nothing more.
+    
     
     Subject: {subject}
     Body: {body}
@@ -73,7 +86,7 @@ for index, email in enumerate(sampled_emails):
     clean_prediction = predicted_label.replace(".", "").strip()
     predicted_labels.append(clean_prediction)
 
-   # time.sleep(1.5)
+    time.sleep(1.5)
 
 # 5. Calculate and Print the Results
 print("\n" + "="*50)
