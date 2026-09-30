@@ -19,7 +19,7 @@ dataset_categories = ["forum", "promotions", "social_media", "spam", "updates", 
 sampled_emails = []
 
 for category in dataset_categories:
-    # Filter the dataset by the current category and take the first 20
+    # Filter the dataset by the current category and take the first 30
     category_subset = dataset.filter(lambda example: example['category'] == category).shuffle().select(range(30))
     for email in category_subset:
         sampled_emails.append(email)
@@ -98,8 +98,15 @@ accuracy = accuracy_score(expected_labels, predicted_labels)
 print(f"Overall Accuracy: {accuracy * 100:.2f}%\n")
 
 # Precision, Recall, and F1-Score
-print("Classification Report:")
-print(classification_report(expected_labels, predicted_labels, labels=dataset_categories))
+#print("Classification Report:")
+#print(classification_report(expected_labels, predicted_labels, labels=dataset_categories))
+# Generate the full string report
+full_report = classification_report(expected_labels, predicted_labels, labels=dataset_categories)
+
+# Chop off the last 5 lines (which contain the accuracy, macro, and weighted averages)
+clean_report = '\n'.join(full_report.split('\n')[:-5])
+
+print(clean_report)
 
 # Confusion Matrix
 print("Confusion Matrix:")
