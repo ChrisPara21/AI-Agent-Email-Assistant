@@ -4,10 +4,10 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
-# Disable https requirement for local testing in Codespaces
+# Allow OAuth authentication over HTTP for local development and testing
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
-# If modifying these scopes, delete the file token.json.
+# Request read-only access to the user's Gmail account
 SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
 
 def fetch_unread_emails(max_results=3):
@@ -21,7 +21,7 @@ def fetch_unread_emails(max_results=3):
     if os.path.exists('token.json'):
         creds = Credentials.from_authorized_user_file('token.json', SCOPES)
         
-    # If there are no (valid) credentials available, let the user log in.
+    # If there are no credentials available, let the user log in but if there are expired ones refresh them.
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
@@ -44,7 +44,7 @@ def fetch_unread_emails(max_results=3):
         with open('token.json', 'w') as token:
             token.write(creds.to_json())
 
-    # Build the Gmail service
+    # Create the Gmail API Client
     service = build('gmail', 'v1', credentials=creds)
     
     # Fetch unread messages
@@ -61,7 +61,8 @@ def fetch_unread_emails(max_results=3):
         msg_detail = service.users().messages().get(userId='me', id=msg['id'], format='metadata', metadataHeaders=['Subject', 'From']).execute()
         headers = msg_detail.get('payload', {}).get('headers', [])
         snippet = msg_detail.get('snippet', '')
-        
+
+        # Get the Subject and Sender from the headers (or a default if not found)
         subject = next((header['value'] for header in headers if header['name'] == 'Subject'), 'No Subject')
         sender = next((header['value'] for header in headers if header['name'] == 'From'), 'Unknown Sender')
         
