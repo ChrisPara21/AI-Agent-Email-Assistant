@@ -1,32 +1,31 @@
 import os
-import json
 import time
 from datasets import load_dataset
 from groq import Groq
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from dotenv import load_dotenv
 
-# Load environment variables
+# Load the API keys from .env and create the AI client
 load_dotenv()
-client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+client = Groq()
 
-# 1. Load the Hugging Face Dataset
+# Load the Hugging Face Dataset
 print("Loading dataset...")
 dataset = load_dataset("jason23322/high-accuracy-email-classifier", split="test", token=os.environ.get("HF_TOKEN"))
 
-# 2. Stratified Sampling (Get 30 emails per category)
+# Stratified Sampling (Get 30 emails per category)
 dataset_categories = ["forum", "promotions", "social_media", "spam", "updates", "verify_code"]
 sampled_emails = []
 
 for category in dataset_categories:
-    # Filter the dataset by the current category and take the first 30
+    # Filter the dataset by the current category, shuffle it, and take 30 random emails
     category_subset = dataset.filter(lambda example: example['category'] == category).shuffle().select(range(30))
     for email in category_subset:
         sampled_emails.append(email)
 
 print(f"Loaded {len(sampled_emails)} emails for testing.")
 
-# 3. Define the LLM Evaluation Function
+# Define the LLM Evaluation Function
 def classify_with_llm(subject, body):
     prompt = f"""
     You are an email classifier. Read the email below and classify it into EXACTLY ONE of the following categories:
@@ -65,20 +64,23 @@ def classify_with_llm(subject, body):
         )
         return response.choices[0].message.content.strip().lower()
     except Exception as e:
+        # If the API call fails, report it and keep the script running
         print(f"API Error: {e}")
         return "Error"
 
-# 4. Run the Pipeline
+# Run the Pipeline
 expected_labels = []
 predicted_labels = []
 
 print("Starting LLM classification... (This may take a few minutes)")
 for index, email in enumerate(sampled_emails):
     print(f"Processing {index + 1}/{len(sampled_emails)}...")
-    
+
+    # Get the correct label and ask the AI for its prediction
     true_label = email['category'].lower()
     predicted_label = classify_with_llm(email['subject'], email['body'])
-    
+
+    # Save the correct label and show the AI's raw answer
     expected_labels.append(true_label)
     print(predicted_label)
     
@@ -88,7 +90,7 @@ for index, email in enumerate(sampled_emails):
 
     time.sleep(1.5)
 
-# 5. Calculate and Print the Results
+# Calculate and Print the Results
 print("\n" + "="*50)
 print("EVALUATION RESULTS")
 print("="*50)
@@ -98,8 +100,6 @@ accuracy = accuracy_score(expected_labels, predicted_labels)
 print(f"Overall Accuracy: {accuracy * 100:.2f}%\n")
 
 # Precision, Recall, and F1-Score
-#print("Classification Report:")
-#print(classification_report(expected_labels, predicted_labels, labels=dataset_categories))
 # Generate the full string report
 full_report = classification_report(expected_labels, predicted_labels, labels=dataset_categories)
 
