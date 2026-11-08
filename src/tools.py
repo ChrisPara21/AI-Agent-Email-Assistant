@@ -1,8 +1,30 @@
 import os.path
+import base64
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+
+def get_email_body(payload):
+    """
+    Recursively searches the Gmail API payload to find and decode the plain text body.
+    """
+    # If this specific part is plain text, decode and return it
+    if payload.get("mimeType") == "text/plain":
+        data = payload.get("body", {}).get("data", "")
+        if data:
+            # Decoding Google's encoded text 
+            return base64.urlsafe_b64decode(data).decode("utf-8")
+        return ""
+    
+    # If the email has multiple parts search further
+    if "parts" in payload:
+        for part in payload["parts"]:
+            text = get_email_body(part)
+            if text:
+                return text
+                
+    return "No readable text found."
 
 # Allow OAuth authentication over HTTP for local development and testing
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
@@ -58,11 +80,15 @@ def fetch_unread_emails(max_results=3):
 
     # Extract details for each email
     for msg in messages:
-        msg_detail = service.users().messages().get(userId='me', id=msg['id'], format='metadata', metadataHeaders=['Subject', 'From']).execute()
-        headers = msg_detail.get('payload', {}).get('headers', [])
-        snippet = msg_detail.get('snippet', '')
+        msg_detail = service.users().messages().get(userId='me', id=msg['id'], format='full').execute()
+        payload = msg_detail.get('payload', {})
+        headers = payload.get('headers', [])
+        
+        full_text = get_email_body(payload)
+         
+        limit_text = full_text[:1500] 
 
-        # Get the Subject and Sender from the headers (or a default if not found)
+        # Get the Subject and Sender from the headers
         subject = next((header['value'] for header in headers if header['name'] == 'Subject'), 'No Subject')
         sender = next((header['value'] for header in headers if header['name'] == 'From'), 'Unknown Sender')
         
@@ -70,7 +96,6 @@ def fetch_unread_emails(max_results=3):
         email_data_list.append({
             "Sender": sender,
             "Subject": subject,
-            "Snippet": snippet # This is the first few lines of the email body
+            "Snippet": limit_text # Passing up to 1500 characters of the real email
         })
-
     return email_data_list
